@@ -1,28 +1,37 @@
 use pyo3::prelude::*;
 
 #[pyfunction]
-fn modify_list(input_list: Vec<f64>) -> PyResult<Vec<f64>> {
-    let mut result_list: Vec<f64> = Vec::new();
-    let mut previous_value: Option<f64> = None;
+fn muskingum_routing(inflow: Vec<f64>, k: f64, x: f64, time_step: i64) -> PyResult<Vec<f64>> {
+    let (c0, c1, c2): (f64, f64, f64);
 
-    for value in input_list.iter() {
-        if previous_value.is_none() {
-            result_list.push(value + 5.0);
+    let secs: f64 = time_step as f64;
+    c0 = -k * x + 0.5 * secs * k * (1.0 - x) + 0.5 * secs;
+    c1 = k * x + 0.5 * secs * k * (1.0 - x) + 0.5 * secs;
+    c2 = k * (1.0 - secs) - 0.5 * secs * k * (1.0 - x) + 0.5 * secs;
+
+    let mut outflow: Vec<f64> = Vec::with_capacity(inflow.len());
+    let mut previous_inflow: f64 = 0.0;
+    let mut previous_outflow: f64 = c0 * inflow[0];
+    let mut first_val: bool = true;
+
+    let mut current_outflow: f64;
+    for current_inflow in inflow.iter() {
+        if first_val {
+            current_outflow = *current_inflow;
+            first_val = false
         } else {
-            if previous_value.unwrap() > 3.5 {
-                result_list.push(value + 3.0);
-            } else {
-                result_list.push(value + 5.0);
-            }
+            current_outflow = &c0 * current_inflow + &c1 * previous_inflow + &c2 * previous_outflow;
         }
-        previous_value = Some(*value);
+        outflow.push(current_outflow);
+        previous_outflow = current_outflow;
+        previous_inflow = *current_inflow;
     }
 
-    Ok(result_list)
+    Ok(outflow)
 }
 
 #[pymodule]
-fn resop(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(modify_list, m)?)?;
+fn pydrology(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(muskingum_routing, m)?)?;
     Ok(())
 }
