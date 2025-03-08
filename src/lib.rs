@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
-
+use pyo3::types::PyDelta;
+use std::time::Duration;
 #[pyfunction]
 fn muskingum_routing(inflow: Vec<f64>, k: f64, x: f64, time_step: i64) -> PyResult<Vec<f64>> {
     let secs: f64 = time_step as f64;
@@ -28,8 +29,15 @@ fn muskingum_routing(inflow: Vec<f64>, k: f64, x: f64, time_step: i64) -> PyResu
     Ok(outflow)
 }
 
+#[pyfunction]
+fn foo(py: Python, delta: Py<PyDelta>) -> PyResult<i64> {
+    let ts: Duration = delta.extract(py)?;
+    Ok(ts.as_secs() as i64)
+}
+
 #[pymodule]
 fn pydrology(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(muskingum_routing, m)?)?;
+    m.add_function(wrap_pyfunction!(foo, m)?)?;
     Ok(())
 }

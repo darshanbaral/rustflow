@@ -8,5 +8,6 @@ edition = "2021"
 name = "pydrology"
 crate-type = ["cdylib"]
 
-[dependencies]
-pyo3 = "0.23.3"
+[dependencies.pyo3]
+version = "0.23.5"
+features = ["extension-module"]
