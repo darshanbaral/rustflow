@@ -2,8 +2,15 @@ use pyo3::prelude::*;
 use pyo3::types::PyDelta;
 use std::time::Duration;
 #[pyfunction]
-fn muskingum_routing(inflow: Vec<f64>, k: f64, x: f64, time_step: i64) -> PyResult<Vec<f64>> {
-    let secs: f64 = time_step as f64;
+fn muskingum_routing(
+    py: Python,
+    inflow: Vec<f64>,
+    k: f64,
+    x: f64,
+    time_step: Py<PyDelta>,
+) -> PyResult<Vec<f64>> {
+    let ts: Duration = time_step.extract(py)?;
+    let secs: f64 = ts.as_secs() as f64;
     let c0 = secs / (2.0 * k * (1.0 - x) + secs);
     let c1 = (k * x + secs / 2.0 - k * x * secs) / (k * (1.0 - x) + secs / 2.0);
     let c2 = (k - k * x - secs / 2.0 + k * x * secs) / (k * (1.0 - x) + secs / 2.0);
