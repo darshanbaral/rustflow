@@ -38,7 +38,7 @@ use std::time::Duration;
 ///
 /// ```python
 /// from datetime import timedelta
-/// from pydrology import muskingum_routing
+/// from rustflow import muskingum_routing
 ///
 /// inflow = [1.0, 2.0, 3.0, 5.0, 4.0, 2.0, 1.0]  # Example inflow hydrograph
 /// k = timedelta(hours=1)  # Storage time constant
