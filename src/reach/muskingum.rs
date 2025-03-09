@@ -62,13 +62,15 @@ pub fn muskingum_routing(
         ));
     }
     let time_step_duration: Duration = time_step.extract(py)?;
+    let dt_s: f64 = time_step_duration.as_secs() as f64;
+
     let k_duration: Duration = k.extract(py)?;
-    let k_val: f64 = k_duration.as_secs() as f64;
-    let delta: f64 = time_step_duration.as_secs() as f64;
-    let c0 = delta / (2.0 * k_val * (1.0 - x) + delta);
-    let c1 = (k_val * x + delta / 2.0 - k_val * x * delta) / (k_val * (1.0 - x) + delta / 2.0);
-    let c2 =
-        (k_val - k_val * x - delta / 2.0 + k_val * x * delta) / (k_val * (1.0 - x) + delta / 2.0);
+    let k_s: f64 = k_duration.as_secs() as f64;
+
+    let den: f64 = 2.0 * k_s * (1.0 - x) + dt_s;
+    let c0 = (dt_s - 2.0 * k_s * x) / den;
+    let c1 = (dt_s + 2.0 * k_s * x) / den;
+    let c2 = (2.0 * k_s * (1.0 - x) - dt_s) / den;
 
     let mut outflow: Vec<f64> = Vec::with_capacity(inflow.len());
     let mut previous_inflow: f64 = 0.0;
@@ -78,7 +80,7 @@ pub fn muskingum_routing(
     let mut current_outflow: f64;
     for &current_inflow in &inflow {
         if is_first_value {
-            current_outflow = current_inflow;
+            current_outflow = c0 * current_inflow;
             is_first_value = false
         } else {
             current_outflow = c0 * current_inflow + c1 * previous_inflow + c2 * previous_outflow;
