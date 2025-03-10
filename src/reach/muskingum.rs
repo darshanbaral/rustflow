@@ -80,7 +80,7 @@ pub fn muskingum_routing(
     let mut current_outflow: f64;
     for &current_inflow in &inflow {
         if is_first_value {
-            current_outflow = c0 * current_inflow;
+            current_outflow = current_inflow;
             is_first_value = false
         } else {
             current_outflow = c0 * current_inflow + c1 * previous_inflow + c2 * previous_outflow;
