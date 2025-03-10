@@ -57,9 +57,8 @@ pub fn muskingum_routing(
     time_step: Py<PyDelta>,
 ) -> PyResult<Vec<f64>> {
     if x < 0.0 || x > 0.5 {
-        return Err(pyo3::exceptions::PyValueError::new_err(
-            "`x` must be between 0 and 0.5 (inclusive)",
-        ));
+        let warnings = py.import("warnings")?;
+        warnings.call_method1("warn", ("`x` is outside of recommended range [0.0, 0.5].",))?;
     }
     let time_step_duration: Duration = time_step.extract(py)?;
     let dt_s: f64 = time_step_duration.as_secs() as f64;
