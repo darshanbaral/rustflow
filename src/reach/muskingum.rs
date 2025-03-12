@@ -55,7 +55,9 @@ pub fn muskingum_routing(
     k: Py<PyDelta>,
     x: f64,
     time_step: Py<PyDelta>,
+    sub_reaches: Option<i64>,
 ) -> PyResult<Vec<f64>> {
+    let sub_reaches = sub_reaches.unwrap_or(1);
     if x < 0.0 || x > 0.5 {
         let warnings = py.import("warnings")?;
         warnings.call_method1("warn", ("`x` is outside of recommended range [0.0, 0.5].",))?;
@@ -64,20 +66,30 @@ pub fn muskingum_routing(
     let dt_s: f64 = time_step_duration.as_secs() as f64;
 
     let k_duration: Duration = k.extract(py)?;
-    let k_s: f64 = k_duration.as_secs() as f64;
+    let k_s: f64 = k_duration.as_secs() as f64 / sub_reaches as f64;
 
-    let den: f64 = 2.0 * k_s * (1.0 - x) + dt_s;
-    let c0 = (dt_s - 2.0 * k_s * x) / den;
-    let c1 = (dt_s + 2.0 * k_s * x) / den;
-    let c2 = (2.0 * k_s * (1.0 - x) - dt_s) / den;
+    let mut outflow = muskingum_routing_rs(inflow, dt_s, k_s, x);
 
-    let mut outflow: Vec<f64> = Vec::with_capacity(inflow.len());
+    for _ in 0..(sub_reaches - 1) {
+        outflow = muskingum_routing_rs(outflow, dt_s, k_s, x)
+    }
+
+    Ok(outflow)
+}
+
+fn muskingum_routing_rs(q_in: Vec<f64>, dt: f64, k: f64, x: f64) -> Vec<f64> {
+    let den: f64 = 2.0 * k * (1.0 - x) + dt;
+    let c0 = (dt - 2.0 * k * x) / den;
+    let c1 = (dt + 2.0 * k * x) / den;
+    let c2 = (2.0 * k * (1.0 - x) - dt) / den;
+
+    let mut outflow: Vec<f64> = Vec::with_capacity(q_in.len());
     let mut previous_inflow: f64 = 0.0;
-    let mut previous_outflow: f64 = c0 * inflow[0];
+    let mut previous_outflow: f64 = c0 * q_in[0];
     let mut is_first_value: bool = true;
 
     let mut current_outflow: f64;
-    for &current_inflow in &inflow {
+    for &current_inflow in &q_in {
         if is_first_value {
             current_outflow = current_inflow;
             is_first_value = false
@@ -89,5 +101,5 @@ pub fn muskingum_routing(
         previous_inflow = current_inflow;
     }
 
-    Ok(outflow)
+    outflow
 }

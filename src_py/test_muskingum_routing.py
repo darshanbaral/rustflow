@@ -8,6 +8,7 @@ if __name__ == "__main__":
     outflow = muskingum_routing(inflow=inflow,
                                 k=timedelta(hours=1),
                                 x=0.25,
-                                time_step=timedelta(minutes=15))
+                                time_step=timedelta(minutes=15),
+                                sub_reaches=12)
     o_df = pandas.DataFrame({"flow": outflow}, index=df.index)
     o_df.to_csv("../data/outflow.csv")
