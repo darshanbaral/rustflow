@@ -1,9 +1,13 @@
 use pyo3::prelude::*;
 pub mod reach;
-use reach::muskingum::muskingum_routing;
 
 #[pymodule]
 fn rustflow(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(muskingum_routing, m)?)?;
+    let reach_module = PyModule::new(m.py(), "reach")?;
+    reach_module.add_function(wrap_pyfunction!(
+        reach::muskingum::muskingum_routing,
+        m.py()
+    )?)?;
+    m.add_submodule(&reach_module)?;
     Ok(())
 }
