@@ -55,9 +55,11 @@ pub fn muskingum_routing(
     k: Py<PyDelta>,
     x: f64,
     time_step: Py<PyDelta>,
-    sub_reaches: Option<i64>,
+    sub_reaches: i64,
+    initial_outflow: Option<f64>,
 ) -> PyResult<Vec<f64>> {
-    let sub_reaches = sub_reaches.unwrap_or(1);
+    let initial_outflow = initial_outflow.unwrap_or(inflow[0]);
+
     if x < 0.0 || x > 0.5 {
         let warnings = py.import("warnings")?;
         warnings.call_method1("warn", ("`x` is outside of recommended range [0.0, 0.5].",))?;
@@ -68,16 +70,23 @@ pub fn muskingum_routing(
     let k_duration: Duration = k.extract(py)?;
     let k_s: f64 = k_duration.as_secs() as f64 / sub_reaches as f64;
 
-    let mut outflow = muskingum_routing_rs(inflow, dt_s, k_s, x);
+    let mut outflow = muskingum_routing_rs(inflow, dt_s, k_s, x, Some(initial_outflow));
 
     for _ in 0..(sub_reaches - 1) {
-        outflow = muskingum_routing_rs(outflow, dt_s, k_s, x)
+        outflow = muskingum_routing_rs(outflow, dt_s, k_s, x, None)
     }
 
     Ok(outflow)
 }
 
-fn muskingum_routing_rs(q_in: Vec<f64>, dt: f64, k: f64, x: f64) -> Vec<f64> {
+fn muskingum_routing_rs(
+    q_in: Vec<f64>,
+    dt: f64,
+    k: f64,
+    x: f64,
+    initial_outflow: Option<f64>,
+) -> Vec<f64> {
+    let initial_outflow = initial_outflow.unwrap_or(q_in[0]);
     let den: f64 = 2.0 * k * (1.0 - x) + dt;
     let c0 = (dt - 2.0 * k * x) / den;
     let c1 = (dt + 2.0 * k * x) / den;
@@ -85,17 +94,12 @@ fn muskingum_routing_rs(q_in: Vec<f64>, dt: f64, k: f64, x: f64) -> Vec<f64> {
 
     let mut outflow: Vec<f64> = Vec::with_capacity(q_in.len());
     let mut previous_inflow: f64 = 0.0;
-    let mut previous_outflow: f64 = c0 * q_in[0];
-    let mut is_first_value: bool = true;
+    outflow.push(initial_outflow);
+    let mut previous_outflow: f64 = initial_outflow;
 
     let mut current_outflow: f64;
-    for &current_inflow in &q_in {
-        if is_first_value {
-            current_outflow = current_inflow;
-            is_first_value = false
-        } else {
-            current_outflow = c0 * current_inflow + c1 * previous_inflow + c2 * previous_outflow;
-        }
+    for &current_inflow in q_in.iter().skip(1) {
+        current_outflow = c0 * current_inflow + c1 * previous_inflow + c2 * previous_outflow;
         outflow.push(current_outflow);
         previous_outflow = current_outflow;
         previous_inflow = current_inflow;
@@ -103,4 +107,3 @@ fn muskingum_routing_rs(q_in: Vec<f64>, dt: f64, k: f64, x: f64) -> Vec<f64> {
 
     outflow
 }
-
