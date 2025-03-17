@@ -56,10 +56,8 @@ pub fn muskingum_routing(
     x: f64,
     time_step: Py<PyDelta>,
     sub_reaches: i64,
-    initial_outflow: Option<f64>,
+    initial_outflow: f64,
 ) -> PyResult<Vec<f64>> {
-    let initial_outflow = initial_outflow.unwrap_or(inflow[0]);
-
     if x < 0.0 || x > 0.5 {
         let warnings = py.import("warnings")?;
         warnings.call_method1("warn", ("`x` is outside of recommended range [0.0, 0.5].",))?;
@@ -93,9 +91,9 @@ fn muskingum_routing_rs(
     let c2 = (2.0 * k * (1.0 - x) - dt) / den;
 
     let mut outflow: Vec<f64> = Vec::with_capacity(q_in.len());
-    let mut previous_inflow: f64 = 0.0;
     outflow.push(initial_outflow);
     let mut previous_outflow: f64 = initial_outflow;
+    let mut previous_inflow: f64 = q_in[0];
 
     let mut current_outflow: f64;
     for &current_inflow in q_in.iter().skip(1) {
