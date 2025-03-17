@@ -1,6 +1,7 @@
 from datetime import timedelta
-from rustflow.reach import muskingum_routing as mkr
+
 import pandas
+from rustflow.reach import muskingum_routing as mkr
 
 if __name__ == "__main__":
     df = pandas.read_csv("./data/gage_flow_data.csv", index_col=0, parse_dates=True)
