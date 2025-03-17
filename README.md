@@ -15,7 +15,8 @@ Rustflow is a hydrological routing library designed for **speed and efficiency**
 Install the `rustflow` Python package using pip:
 
 ```bash
-pip install rustflow
+# TODO
+pip install rustflow 
 ```
 
 ### Building from Source
